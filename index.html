@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Pomodoro con 2 Ruletas + Horas y Música</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700&display=swap');
+        body {
+            margin: 0;
+            background: #e6f0ff;
+            font-family: 'Nunito', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: #003366;
+        }
+        .container {
+            background: #f0f7ff;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0, 51, 102, 0.15);
+            max-width: 480px;
+            width: 100%;
+            padding: 30px 30px 40px;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #004080;
+            font-weight: 700;
+            font-size: 2rem;
+        }
+        label {
+            display: block;
+            margin: 15px 0 6px;
+            font-weight: 600;
+            color: #004080;
+            text-align: left;
+        }
+        .time-inputs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+        .time-inputs input {
+            width: 60px;
+            padding: 8px;
+            font-size: 1.1rem;
+            border-radius: 12px;
+            border: 2px solid #80aaff;
+            text-align: center;
+            font-weight: 700;
+            color: #004080;
+            transition: border-color 0.3s ease;
+        }
+        .time-inputs input:focus {
+            outline: none;
+            border-color: #003366;
+        }
+        .time-label {
+            font-weight: 600;
+            color: #004080;
+            user-select: none;
+        }
+        .ruletas {
+            display: flex;
+            justify-content: space-around;
+            margin: 25px 0 15px;
+        }
+        .ruleta-container {
+            position: relative;
+            width: 140px;
+            height: 140px;
+        }
+        svg {
+            transform: rotate(-90deg);
+        }
+        circle {
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+        }
+        .bg-circle {
+            stroke: #cce0ff;
+        }
+        .progress-circle {
+            stroke: #3366cc;
+            transition: stroke-dashoffset 1s linear;
+        }
+        .progress-circle.resting {
+            stroke: #1a73e8;
+        }
+        .timer-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #003366;
+            user-select: none;
+        }
+        @keyframes blinkBlue {
+            0%, 100% {
+                stroke: #3366cc;
+            }
+            50% {
+                stroke: #0059b3;
+            }
+        }
+        .blinking {
+            animation: blinkBlue 1s infinite;
+        }
+        .controls {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        button {
+            background: #3366cc;
+            border: none;
+            padding: 12px 20px;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(51, 102, 204, 0.6);
+            color: #e6f0ff;
+            transition: background 0.3s ease;
+            flex: 1 1 45%;
+            min-width: 100px;
+        }
+        button:hover:not(:disabled) {
+            background: #254a99;
+        }
+        button:disabled {
+            background: #a3b8e6;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 1rem;
+            color: #336699;
+            user-select: none;
+        }
+        /* Audio controls hidden */
+        audio {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container" role="main" aria-label="Pomodoro con dos ruletas">
+
+    <h1>Pomodoro para que Botis se saque el carné de conducir</h1>
+
+    <label for="totalHours">Tiempo total de estudio:</label>
+    <div class="time-inputs" aria-label="Tiempo total de estudio en horas, minutos y segundos">
+        <input id="totalHours" type="number" min="0" max="23" value="1" aria-label="Horas"/>
+        <span class="time-label">h</span>
+        <input id="totalMinutes" type="number" min="0" max="59" value="0" aria-label="Minutos"/>
+        <span class="time-label">m</span>
+        <input id="totalSeconds" type="number" min="0" max="59" value="0" aria-label="Segundos"/>
+        <span class="time-label">s</span>
+    </div>
+
+    <label for="restEveryHours">Descansar cada:</label>
+    <div class="time-inputs" aria-label="Descansar cada x horas, minutos y segundos">
+        <input id="restEveryHours" type="number" min="0" max="23" value="0" aria-label="Horas"/>
+        <span class="time-label">h</span>
+        <input id="restEveryMinutes" type="number" min="0" max="59" value="5" aria-label="Minutos"/>
+        <span class="time-label">m</span>
+        <input id="restEverySeconds" type="number" min="0" max="59" value="0" aria-label="Segundos"/>
+        <span class="time-label">s</span>
+    </div>
+
+    <label for="restTimeHours">Duración del descanso:</label>
+    <div class="time-inputs" aria-label="Duración del descanso en horas, minutos y segundos">
+        <input id="restTimeHours" type="number" min="0" max="23" value="0" aria-label="Horas"/>
+        <span class="time-label">h</span>
+        <input id="restTimeMinutes" type="number" min="0" max="59" value="3" aria-label="Minutos"/>
+        <span class="time-label">m</span>
+        <input id="restTimeSeconds" type="number" min="0" max="59" value="0" aria-label="Segundos"/>
+        <span class="time-label">s</span>
+    </div>
+
+    <label for="restMusic">Música para el descanso:</label>
+    <input id="restMusic" type="file" accept="audio/*" aria-label="Seleccionar archivo de música para el descanso"/>
+
+    <div class="ruletas" aria-label="Indicadores de tiempo">
+        <div class="ruleta-container" aria-live="polite" aria-atomic="true" aria-label="Tiempo total de estudio">
+            <svg width="140" height="140" viewBox="0 0 120 120" role="img" aria-hidden="true">
+                <circle class="bg-circle" cx="60" cy="60" r="54"></circle>
+                <circle class="progress-circle" cx="60" cy="60" r="54" stroke-dasharray="339.292"
+                        stroke-dashoffset="0"></circle>
+            </svg>
+            <div class="timer-label" id="labelTotal">00:00</div>
+        </div>
+
+        <div class="ruleta-container" aria-live="polite" aria-atomic="true" aria-label="Tiempo de descanso">
+            <svg width="140" height="140" viewBox="0 0 120 120" role="img" aria-hidden="true">
+                <circle class="bg-circle" cx="60" cy="60" r="54"></circle>
+                <circle class="progress-circle resting" cx="60" cy="60" r="54" stroke-dasharray="339.292"
+                        stroke-dashoffset="339.292"></circle>
+            </svg>
+            <div class="timer-label" id="labelRest">00:00</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="startBtn" aria-label="Iniciar temporizador">Start</button>
+        <button id="pauseBtn" disabled aria-label="Pausar temporizador">Pause</button>
+        <button id="resetBtn" aria-label="Reiniciar temporizador">Reset</button>
+    </div>
+
+    <div class="footer" aria-live="polite" id="status">Listo para comenzar</div>
+
+    <audio id="audioRest" loop></audio>
+</div>
+
+<script>
+    // Inputs para tiempos
+    const totalHours = document.getElementById('totalHours');
+    const totalMinutes = document.getElementById('totalMinutes');
+    const totalSeconds = document.getElementById('totalSeconds');
+
+    const restEveryHours = document.getElementById('restEveryHours');
+    const restEveryMinutes = document.getElementById('restEveryMinutes');
+    const restEverySeconds = document.getElementById('restEverySeconds');
+
+    const restTimeHours = document.getElementById('restTimeHours');
+    const restTimeMinutes = document.getElementById('restTimeMinutes');
+    const restTimeSeconds = document.getElementById('restTimeSeconds');
+
+    const restMusicInput = document.getElementById('restMusic');
+    const audioRest = document.getElementById('audioRest');
+
+    // Botones y labels
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const status = document.getElementById('status');
+
+    const labelTotal = document.getElementById('labelTotal');
+    const labelRest = document.getElementById('labelRest');
+
+    const progressTotal = document.querySelector('.progress-circle:not(.resting)');
+    const progressRest = document.querySelector('.progress-circle.resting');
+
+    const circumference = 2 * Math.PI * 54;
+
+    let timer = null;
+    let isRunning = false;
+
+    let totalStudyTime = 3600; // en segundos (default 1h)
+    let restEveryTime = 300;   // en segundos (default 5 min)
+    let restDuration = 180;    // en segundos (default 3 min)
+
+    let elapsedTotal = 0;
+    let elapsedRest = 0;
+
+    let inRest = false;
+
+    // Sonidos kawai
+    function beep(freq = 440, duration = 300, volume = 3) {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+        gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + duration / 1000);
+    }
+    function beepBreak() {
+        const freqs = [660, 880, 1047];
+        let delay = 0;
+        freqs.forEach(freq => {
+            setTimeout(() => beep(freq, 150, 3), delay);
+            delay += 160;
+        });
+    }
+    function beepStudy() {
+        const freqs = [1047, 880, 660];
+        let delay = 0;
+        freqs.forEach(freq => {
+            setTimeout(() => beep(freq, 150, 3), delay);
+            delay += 160;
+        });
+    }
+
+    function formatTime(seconds) {
+        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const s = (seconds % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    }
+
+    function setProgress(circle, percent) {
+        const offset = circumference * (1 - percent);
+        circle.style.strokeDashoffset = offset;
+    }
+
+    function updateLabels() {
+        labelTotal.textContent = formatTime(totalStudyTime - elapsedTotal);
+        labelRest.textContent = formatTime(restDuration - elapsedRest);
+    }
+
+    function toSeconds(h, m, s) {
+        return Number(h)*3600 + Number(m)*60 + Number(s);
+    }
+
+    function startTimer() {
+        if (isRunning) return;
+
+        // Obtener tiempos en segundos
+        totalStudyTime = toSeconds(totalHours.value, totalMinutes.value, totalSeconds.value);
+        restEveryTime = toSeconds(restEveryHours.value, restEveryMinutes.value, restEverySeconds.value);
+        restDuration = toSeconds(restTimeHours.value, restTimeMinutes.value, restTimeSeconds.value);
+
+        if (totalStudyTime <= 0) {
+            alert('Introduce un tiempo total de estudio válido (mayor que 0).');
+            return;
+        }
+        if (restEveryTime <= 0) {
+            alert('Introduce un tiempo válido para descansar cada (mayor que 0).');
+            return;
+        }
+        if (restDuration <= 0) {
+            alert('Introduce un tiempo de descanso válido (mayor que 0).');
+            return;
+        }
+        if(restEveryTime > totalStudyTime){
+            alert('El tiempo para descansar cada X no puede ser mayor que el tiempo total de estudio.');
+            return;
+        }
+
+        elapsedTotal = 0;
+        elapsedRest = 0;
+        inRest = false;
+
+        setProgress(progressTotal, 0);
+        setProgress(progressRest, 1);
+
+        updateLabels();
+
+        startBtn.disabled = true;
+        pauseBtn.disabled = false;
+
+        totalHours.disabled = true;
+        totalMinutes.disabled = true;
+        totalSeconds.disabled = true;
+        restEveryHours.disabled = true;
+        restEveryMinutes.disabled = true;
+        restEverySeconds.disabled = true;
+        restTimeHours.disabled = true;
+        restTimeMinutes.disabled = true;
+        restTimeSeconds.disabled = true;
+        restMusicInput.disabled = true;
+
+        status.textContent = 'Estudiando...';
+
+        isRunning = true;
+
+        timer = setInterval(tick, 1000);
+    }
+
+    function tick() {
+        if (!inRest) {
+            elapsedTotal++;
+            updateLabels();
+
+            // Avanzar progres bar total estudio
+            setProgress(progressTotal, elapsedTotal / totalStudyTime);
+
+            // Si es hora de descansar
+            if (elapsedTotal % restEveryTime === 0 && elapsedTotal !== 0 && elapsedTotal < totalStudyTime) {
+                // Empieza descanso
+                inRest = true;
+                elapsedRest = 0;
+                status.textContent = 'Descansando :)';
+                beepBreak();
+
+                // Mostrar y animar ruleta de descanso
+                setProgress(progressRest, 0);
+                progressRest.classList.add('blinking');
+
+                // Reproducir música de descanso si hay
+                if (audioRest.src) {
+                    audioRest.play().catch(() => {
+                        // Si error, no pasa nada
+                    });
+                }
+            }
+            if (elapsedTotal >= totalStudyTime) {
+                // Se terminó el estudio
+                clearInterval(timer);
+                status.textContent = '¡Tiempo de estudio terminado! 🎉';
+                isRunning = false;
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+
+                totalHours.disabled = false;
+                totalMinutes.disabled = false;
+                totalSeconds.disabled = false;
+                restEveryHours.disabled = false;
+                restEveryMinutes.disabled = false;
+                restEverySeconds.disabled = false;
+                restTimeHours.disabled = false;
+                restTimeMinutes.disabled = false;
+                restTimeSeconds.disabled = false;
+                restMusicInput.disabled = false;
+
+                // Detener música si estaba sonando
+                audioRest.pause();
+                audioRest.currentTime = 0;
+
+                // Mostrar ruletas completas
+                setProgress(progressTotal, 1);
+                setProgress(progressRest, 1);
+                progressRest.classList.remove('blinking');
+
+                beepStudy();
+            }
+        } else {
+            // En descanso
+            elapsedRest++;
+            updateLabels();
+
+            setProgress(progressRest, elapsedRest / restDuration);
+
+            if (elapsedRest >= restDuration) {
+                // Fin del descanso
+                inRest = false;
+                elapsedRest = 0;
+                status.textContent = 'Estudiando...';
+                beepStudy();
+
+                setProgress(progressRest, 1);
+                progressRest.classList.remove('blinking');
+
+                // Parar música descanso
+                audioRest.pause();
+                audioRest.currentTime = 0;
+            }
+        }
+    }
+
+    function pauseTimer() {
+        if (!isRunning) return;
+        clearInterval(timer);
+        isRunning = false;
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+        status.textContent = 'Pausado';
+
+        // Pausar música si suena
+        audioRest.pause();
+    }
+
+    function resetTimer() {
+        clearInterval(timer);
+        isRunning = false;
+        elapsedTotal = 0;
+        elapsedRest = 0;
+        inRest = false;
+
+        updateLabels();
+        setProgress(progressTotal, 0);
+        setProgress(progressRest, 1);
+        progressRest.classList.remove('blinking');
+
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+        status.textContent = 'Listo para comenzar';
+
+        totalHours.disabled = false;
+        totalMinutes.disabled = false;
+        totalSeconds.disabled = false;
+        restEveryHours.disabled = false;
+        restEveryMinutes.disabled = false;
+        restEverySeconds.disabled = false;
+        restTimeHours.disabled = false;
+        restTimeMinutes.disabled = false;
+        restTimeSeconds.disabled = false;
+        restMusicInput.disabled = false;
+
+        // Parar música
+        audioRest.pause();
+        audioRest.currentTime = 0;
+    }
+
+    // Escuchar archivo seleccionado para música
+    restMusicInput.addEventListener('change', function(){
+        const file = this.files[0];
+        if(file){
+            const url = URL.createObjectURL(file);
+            audioRest.src = url;
+        } else {
+            audioRest.src = '';
+        }
+    });
+
+    startBtn.addEventListener('click', startTimer);
+    pauseBtn.addEventListener('click', pauseTimer);
+    resetBtn.addEventListener('click', resetTimer);
+
+    // Inicializar labels
+    updateLabels();
+    setProgress(progressTotal, 0);
+    setProgress(progressRest, 1);
+</script>
+</body>
+</html>
